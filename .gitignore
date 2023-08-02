@@ -1,0 +1,33 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Environment configuration
+.env
+firebase-service-account.json
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Compiled TypeScript files
+*.js
+*.js.map
+*.d.ts
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing artifacts
+coverage/
+
+# Miscellaneous
+*.swp
+*.swo

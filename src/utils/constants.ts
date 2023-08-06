@@ -1,15 +1,15 @@
 // Purpose: Constants used in the project.
 
-const API_VERSION = "v1";
-const API_BASE_URL = `/api/${API_VERSION}`;
-const API_URLS = {
+export const API_VERSION = "v1";
+export const API_BASE_URL = `/api/${API_VERSION}`;
+export const API_URLS = {
   AUTH: "auth",
   USER: "user",
   NFT: "nft",
   MISC: "misc",
 };
 
-const HttpResponseCode = {
+export const HttpResponseCode = {
   SUCCESS: 200,
   CREATED: 201,
   BAD_REQUEST: 400,
@@ -21,7 +21,7 @@ const HttpResponseCode = {
 
 // TODO: There might be  a better way to do this. Discuss this.
 
-enum CapiErrorCode {
+export enum CapiErrorCode {
   // Use the following code when you want to send a generic error message. For eg db inseriton failed, etc.
   CAPI_OPERATION_FAILED = "CAPI_OPERATION_FAILED",
 
@@ -43,7 +43,7 @@ enum CapiErrorCode {
   CAPI_TRANSACTION_ALREADY_PROCESSED = "CAPI_TRANSACTION_ALREADY_PROCESSED",
 }
 
-enum CapiStatusCode {
+export enum CapiStatusCode {
   // Use the following code when you want to send a generic success message. For eg db inseriton, rsa keys genenrated etc.
   CAPI_OPERATION_SUCCESSFUL = "CAPI_OPERATION_SUCCESSFUL",
 
@@ -72,10 +72,10 @@ enum CapiStatusCode {
   CAPI_TRANSACTION_EXPIRED = "CAPI_TRANSACTION_EXPIRED",
 }
 
-export {
-  API_URLS,
-  API_BASE_URL,
-  HttpResponseCode,
-  CapiErrorCode,
-  CapiStatusCode,
-};
+// export {
+//   API_URLS,
+//   API_BASE_URL,
+//   HttpResponseCode,
+//   CapiErrorCode,
+//   CapiStatusCode,
+// };

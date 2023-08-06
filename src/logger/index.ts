@@ -5,6 +5,8 @@
 // import winston from "winston/lib/winston/config/index.js";
 import { Logger } from "winston";
 import { developmentLogger } from "./developmentLogger";
+import dotenv from "dotenv";
+dotenv.config();
 
 let logger: Logger;
 

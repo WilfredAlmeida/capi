@@ -4,8 +4,10 @@ import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
 
-import { API_URLS, API_BASE_URL } from "./utils/constants";
+// import { API_URLS, API_BASE_URL } from "./utils/constants";
 import { logger } from "./logger/index";
+import nft from "./routes/nft"
+import { API_BASE_URL, API_URLS } from "./utils/constants";
 
 dotenv.config();
 
@@ -40,7 +42,7 @@ app.use(function (req, res, next) {
   next();
 });
 
-
+app.use(`${API_BASE_URL}/${API_URLS.NFT}`,nft)
 
 app.get(`/`, (req: Request, res: Response) => {
   res.send(`<!DOCTYPE html>

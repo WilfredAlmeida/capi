@@ -5,6 +5,7 @@ dist/
 # Environment configuration
 .env
 firebase-service-account.json
+.local*
 
 # Editor and IDE files
 .vscode/

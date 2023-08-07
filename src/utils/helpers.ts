@@ -1,6 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 
 // define some default locations
 const DEFAULT_KEY_DIR_NAME = ".local_keys";
@@ -18,7 +23,8 @@ export function loadPublicKeysFromFile(
     if (!fs.existsSync(absPath)) throw Error("File does not exist.");
 
     // load the public keys from the file
-    const data = JSON.parse(fs.readFileSync(absPath, { encoding: "utf-8" })) || {};
+    const data =
+      JSON.parse(fs.readFileSync(absPath, { encoding: "utf-8" })) || {};
 
     // convert all loaded keyed values into valid public keys
     for (const [key, value] of Object.entries(data)) {
@@ -111,7 +117,9 @@ export function loadKeypairFromFile(absPath: string) {
     if (!fs.existsSync(absPath)) throw Error("File does not exist.");
 
     // load the keypair from the file
-    const keyfileBytes = JSON.parse(fs.readFileSync(absPath, { encoding: "utf-8" }));
+    const keyfileBytes = JSON.parse(
+      fs.readFileSync(absPath, { encoding: "utf-8" }),
+    );
     // parse the loaded secretKey into a valid keypair
     const keypair = Keypair.fromSecretKey(new Uint8Array(keyfileBytes));
     return keypair;
@@ -148,7 +156,10 @@ export function saveKeypairToFile(
 /*
   Attempt to load a keypair from the filesystem, or generate and save a new one
 */
-export function loadOrGenerateKeypair(fileName: string, dirName: string = DEFAULT_KEY_DIR_NAME) {
+export function loadOrGenerateKeypair(
+  fileName: string,
+  dirName: string = DEFAULT_KEY_DIR_NAME,
+) {
   try {
     // compute the path to locate the file
     const searchPath = path.join(dirName, `${fileName}.json`);
@@ -181,7 +192,8 @@ export function explorerURL({
   let baseUrl: string;
   //
   if (address) baseUrl = `https://explorer.solana.com/address/${address}`;
-  else if (txSignature) baseUrl = `https://explorer.solana.com/tx/${txSignature}`;
+  else if (txSignature)
+    baseUrl = `https://explorer.solana.com/tx/${txSignature}`;
   else return "[unknown]";
 
   // auto append the desired search params
@@ -206,11 +218,15 @@ export async function airdropOnLowBalance(
 
   // check the balance of the two accounts, airdrop when low
   if (forceAirdrop === true || balance < MIN_BALANCE_TO_AIRDROP) {
-    console.log(`Requesting airdrop of 1 SOL to ${keypair.publicKey.toBase58()}...`);
-    await connection.requestAirdrop(keypair.publicKey, LAMPORTS_PER_SOL).then(sig => {
-      console.log("Tx signature:", sig);
-      // balance = balance + LAMPORTS_PER_SOL;
-    });
+    console.log(
+      `Requesting airdrop of 1 SOL to ${keypair.publicKey.toBase58()}...`,
+    );
+    await connection
+      .requestAirdrop(keypair.publicKey, LAMPORTS_PER_SOL)
+      .then((sig) => {
+        console.log("Tx signature:", sig);
+        // balance = balance + LAMPORTS_PER_SOL;
+      });
 
     // fetch the new balance
     // const newBalance = await connection.getBalance(keypair.publicKey);
@@ -232,9 +248,9 @@ export async function extractSignatureFromFailedTransaction(
   if (err?.signature) return err.signature;
 
   // extract the failed transaction's signature
-  const failedSig = new RegExp(/^((.*)?Error: )?(Transaction|Signature) ([A-Z0-9]{32,}) /gim).exec(
-    err?.message?.toString(),
-  )?.[4];
+  const failedSig = new RegExp(
+    /^((.*)?Error: )?(Transaction|Signature) ([A-Z0-9]{32,}) /gim,
+  ).exec(err?.message?.toString())?.[4];
 
   // ensure a signature was found
   if (failedSig) {
@@ -244,10 +260,12 @@ export async function extractSignatureFromFailedTransaction(
         .getTransaction(failedSig, {
           maxSupportedTransactionVersion: 0,
         })
-        .then(tx => {
+        .then((tx) => {
           console.log(`\n==== Transaction logs for ${failedSig} ====`);
           console.log(explorerURL({ txSignature: failedSig }), "");
-          console.log(tx?.meta?.logMessages ?? "No log messages provided by RPC");
+          console.log(
+            tx?.meta?.logMessages ?? "No log messages provided by RPC",
+          );
           console.log(`==== END LOGS ====\n`);
         });
     else {

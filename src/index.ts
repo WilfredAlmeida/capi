@@ -6,7 +6,7 @@ import cors from "cors";
 
 // import { API_URLS, API_BASE_URL } from "./utils/constants";
 import { logger } from "./logger/index";
-import nft from "./routes/nft"
+import nft from "./routes/nft";
 import { API_BASE_URL, API_URLS } from "./utils/constants";
 
 dotenv.config();
@@ -18,7 +18,7 @@ const app = express();
 const port = process.env.PORT || 6565;
 
 app.use(cors());
-app.use(express.json({limit: '200mb'}));
+app.use(express.json({ limit: "200mb" }));
 
 // The CORS middleware
 app.use(function (req, res, next) {
@@ -42,7 +42,7 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.use(`${API_BASE_URL}/${API_URLS.NFT}`,nft)
+app.use(`${API_BASE_URL}/${API_URLS.NFT}`, nft);
 
 app.get(`/`, (req: Request, res: Response) => {
   res.send(`<!DOCTYPE html>

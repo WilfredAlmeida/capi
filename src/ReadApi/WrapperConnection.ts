@@ -1,12 +1,27 @@
-import { Commitment, Connection, ConnectionConfig, PublicKey } from "@solana/web3.js";
+import {
+  Commitment,
+  Connection,
+  ConnectionConfig,
+  PublicKey,
+} from "@solana/web3.js";
 import BN from "bn.js";
 
 import { TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { PROGRAM_ID as BUBBLEGUM_PROGRAM_ID } from "@metaplex-foundation/mpl-bubblegum";
 
 // import from the `@metaplex-foundation/js`
-import { MetaplexError, toBigNumber, Pda, amount } from "@metaplex-foundation/js";
-import type { SplTokenCurrency, Metadata, Mint, NftOriginalEdition } from "@metaplex-foundation/js";
+import {
+  MetaplexError,
+  toBigNumber,
+  Pda,
+  amount,
+} from "@metaplex-foundation/js";
+import type {
+  SplTokenCurrency,
+  Metadata,
+  Mint,
+  NftOriginalEdition,
+} from "@metaplex-foundation/js";
 
 // local imports for the ReadApi types
 import type {
@@ -40,7 +55,9 @@ export class ReadApiError extends MetaplexError {
 /**
  * Convert a ReadApi asset (e.g. compressed NFT) into an NftEdition
  */
-export const toNftEditionFromReadApiAsset = (input: ReadApiAsset): NftOriginalEdition => {
+export const toNftEditionFromReadApiAsset = (
+  input: ReadApiAsset,
+): NftOriginalEdition => {
   return {
     model: "nftEdition",
     isOriginal: true,
@@ -76,9 +93,13 @@ export const toMintFromReadApiAsset = (input: ReadApiAsset): Mint => {
  * Convert a ReadApi asset's data into standard Metaplex `Metadata`
  */
 export const toMetadataFromReadApiAsset = (input: ReadApiAsset): Metadata => {
-  const updateAuthority = input.authorities?.find(authority => authority.scopes.includes("full"));
+  const updateAuthority = input.authorities?.find((authority) =>
+    authority.scopes.includes("full"),
+  );
 
-  const collection = input.grouping.find(({ group_key }) => group_key === "collection");
+  const collection = input.grouping.find(
+    ({ group_key }) => group_key === "collection",
+  );
 
   return {
     model: "metadata",
@@ -132,7 +153,10 @@ export const toMetadataFromReadApiAsset = (input: ReadApiAsset): Metadata => {
  * for state compression and compressed NFTs
  */
 export class WrapperConnection extends Connection {
-  constructor(endpoint: string, commitmentOrConfig?: Commitment | ConnectionConfig) {
+  constructor(
+    endpoint: string,
+    commitmentOrConfig?: Commitment | ConnectionConfig,
+  ) {
     super(endpoint, commitmentOrConfig);
   }
 
@@ -158,7 +182,10 @@ export class WrapperConnection extends Connection {
   // Asset id can be calculated via Bubblegum#getLeafAssetId
   // It is a PDA with the following seeds: ["asset", tree, leafIndex]
   async getAsset(assetId: PublicKey): Promise<ReadApiAsset> {
-    const { result: asset } = await this.callReadApi<GetAssetRpcInput, ReadApiAsset>({
+    const { result: asset } = await this.callReadApi<
+      GetAssetRpcInput,
+      ReadApiAsset
+    >({
       method: "getAsset",
       params: {
         id: assetId.toBase58(),
@@ -206,7 +233,10 @@ export class WrapperConnection extends Connection {
 
     // a pagination method MUST be selected, but we are defaulting to using `page=0`
 
-    const { result } = await this.callReadApi<GetAssetsByGroupRpcInput, ReadApiAssetList>({
+    const { result } = await this.callReadApi<
+      GetAssetsByGroupRpcInput,
+      ReadApiAssetList
+    >({
       method: "getAssetsByGroup",
       params: {
         groupKey,
@@ -241,7 +271,10 @@ export class WrapperConnection extends Connection {
 
     // a pagination method MUST be selected, but we are defaulting to using `page=0`
 
-    const { result } = await this.callReadApi<GetAssetsByOwnerRpcInput, ReadApiAssetList>({
+    const { result } = await this.callReadApi<
+      GetAssetsByOwnerRpcInput,
+      ReadApiAssetList
+    >({
       method: "getAssetsByOwner",
       params: {
         ownerAddress,

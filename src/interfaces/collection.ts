@@ -1,6 +1,6 @@
 export interface Collection {
-    nftCount: number;
-    mintAllTo: string | null;
-    collectionName: string;
-    collectionSymbol: string;
+  nftCount: number;
+  mintAllTo: string | null;
+  collectionName: string;
+  collectionSymbol: string;
 }

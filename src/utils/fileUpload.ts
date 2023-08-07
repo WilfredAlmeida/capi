@@ -1,19 +1,25 @@
 import supabase from "../db/supabase";
 
-const uploadFilesToSupabase = async (files: String[]) => {
+const uploadImagesToSupabase = async (file: string) => {
 
-    const urls = []
+    const base64 = file.split('base64,')[1]
 
-    for (let i = 0; i < files.length; i++) {
+    const { data, error } = await supabase.storage.from("nft-images").upload(`${(Math.random() + 1).toString(36).substring(6)}.jpeg`, Buffer.from(base64, "base64"), { contentType: 'image/jpeg' })
 
-        const {data, error} = await supabase.storage.from("nft-images").upload(`${(Math.random() + 1).toString(36).substring(6)}`, Buffer.from(files[i]))
+    const uploadData = supabase.storage.from("nft-images").getPublicUrl(data?.path!)
 
-        urls.push(supabase.storage.from("nft-images").getPublicUrl(data?.path!))
-
-    }
-
-    return urls;
+    return uploadData.data.publicUrl;
 
 }
 
-export default uploadFilesToSupabase;
+const uploadJsonMetadataToSupabase = async (file: string) => {
+
+    const { data, error } = await supabase.storage.from("metadata-json").upload(`nft/${(Math.random() + 1).toString(36).substring(6)}.json`, Buffer.from(file))
+
+    const uploadData = supabase.storage.from("metadata-json").getPublicUrl(data?.path!)
+
+    return uploadData.data.publicUrl;
+
+}
+
+export { uploadImagesToSupabase, uploadJsonMetadataToSupabase };

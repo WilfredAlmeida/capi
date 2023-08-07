@@ -18,7 +18,7 @@ const app = express();
 const port = process.env.PORT || 6565;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({limit: '200mb'}));
 
 // The CORS middleware
 app.use(function (req, res, next) {

@@ -3,4 +3,5 @@ export interface Collection {
   mintAllTo: string | null;
   collectionName: string;
   collectionSymbol: string;
+  collectionImage: string | null;
 }

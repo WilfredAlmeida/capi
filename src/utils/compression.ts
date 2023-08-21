@@ -36,6 +36,7 @@ import {
 
 // import local helper functions
 import { explorerURL, extractSignatureFromFailedTransaction } from "./helpers";
+import { logger } from "../logger";
 
 /*
   Helper function to create a merkle tree on chain, including allocating 
@@ -280,8 +281,8 @@ export async function mintCompressedNFT(
   collectionMint: PublicKey,
   collectionMetadata: PublicKey,
   collectionMasterEditionAccount: PublicKey,
-  compressedNFTMetadata: MetadataArgs,
-  receiverAddress?: PublicKey,
+  compressedNFTMetadata: MetadataArgs[],
+  receiverAddress?: PublicKey[],
 ) {
   // derive the tree's authority (PDA), owned by Bubblegum
   const [treeAuthority, _bump] = PublicKey.findProgramAddressSync(
@@ -297,7 +298,8 @@ export async function mintCompressedNFT(
   );
 
   // create an array of instruction, to mint multiple compressed NFTs at once
-  const mintIxs: TransactionInstruction[] = [];
+  let mintIxs: TransactionInstruction[] = [];
+  const transactionSignatures: String[] = [];
 
   /**
    * correctly format the metadata args for the nft to mint
@@ -306,9 +308,6 @@ export async function mintCompressedNFT(
    * will auto verify the collection. But, the `collection.verified` value inside the
    * `metadataArgs` must be set to `false` in order for the instruction to succeed
    */
-  const metadataArgs = Object.assign(compressedNFTMetadata, {
-    collection: { key: collectionMint, verified: false },
-  });
 
   /**
    * compute the data and creator hash for display in the console
@@ -317,14 +316,14 @@ export async function mintCompressedNFT(
    * (since it is performed on chain via the Bubblegum program)
    * this is only for demonstration
    */
-  const computedDataHash = new PublicKey(
-    computeDataHash(metadataArgs),
-  ).toBase58();
-  const computedCreatorHash = new PublicKey(
-    computeCreatorHash(metadataArgs.creators),
-  ).toBase58();
-  console.log("computedDataHash:", computedDataHash);
-  console.log("computedCreatorHash:", computedCreatorHash);
+  // const computedDataHash = new PublicKey(
+  //   computeDataHash(metadataArgs),
+  // ).toBase58();
+  // const computedCreatorHash = new PublicKey(
+  //   computeCreatorHash(metadataArgs.creators),
+  // ).toBase58();
+  // console.log("computedDataHash:", computedDataHash);
+  // console.log("computedCreatorHash:", computedCreatorHash);
 
   /*
       Add a single mint to collection instruction 
@@ -332,73 +331,93 @@ export async function mintCompressedNFT(
       But you could all multiple in the same transaction, as long as your 
       transaction is still within the byte size limits
     */
-  mintIxs.push(
-    createMintToCollectionV1Instruction(
-      {
-        payer: payer.publicKey,
 
-        merkleTree: treeAddress,
-        treeAuthority,
-        treeDelegate: payer.publicKey,
+  for (let i = 0; i < compressedNFTMetadata.length; i++) {
 
-        // set the receiver of the NFT
-        leafOwner: receiverAddress || payer.publicKey,
-        // set a delegated authority over this NFT
-        leafDelegate: payer.publicKey,
+    mintIxs = [];
+    logger.info(`minting compressed nft ${i}`);
 
-        /*
-                    You can set any delegate address at mint, otherwise should 
-                    normally be the same as `leafOwner`
-                    NOTE: the delegate will be auto cleared upon NFT transfer
-                    ---
-                    in this case, we are setting the payer as the delegate
-                  */
+    const metadataArgs = Object.assign(compressedNFTMetadata[i], {
+      collection: { key: collectionMint, verified: false },
+    });
 
-        // collection details
-        collectionAuthority: payer.publicKey,
-        collectionAuthorityRecordPda: BUBBLEGUM_PROGRAM_ID,
-        collectionMint: collectionMint,
-        collectionMetadata: collectionMetadata,
-        editionAccount: collectionMasterEditionAccount,
+    mintIxs.push(
+      createMintToCollectionV1Instruction(
+        {
+          payer: payer.publicKey,
 
-        // other accounts
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        logWrapper: SPL_NOOP_PROGRAM_ID,
-        bubblegumSigner: bubblegumSigner,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-      },
-      {
-        metadataArgs,
-      },
-    ),
-  );
+          merkleTree: treeAddress,
+          treeAuthority,
+          treeDelegate: payer.publicKey,
 
-  try {
-    // construct the transaction with our instructions, making the `payer` the `feePayer`
-    const tx = new Transaction().add(...mintIxs);
-    tx.feePayer = payer.publicKey;
+          // set the receiver of the NFT
+          leafOwner: receiverAddress![i] || payer.publicKey,
+          // set a delegated authority over this NFT
+          leafDelegate: payer.publicKey,
 
-    // send the transaction to the cluster
-    const txSignature = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [payer],
-      {
-        commitment: "confirmed",
-        skipPreflight: true,
-      },
+          /*
+                      You can set any delegate address at mint, otherwise should 
+                      normally be the same as `leafOwner`
+                      NOTE: the delegate will be auto cleared upon NFT transfer
+                      ---
+                      in this case, we are setting the payer as the delegate
+                    */
+
+          // collection details
+          collectionAuthority: payer.publicKey,
+          collectionAuthorityRecordPda: BUBBLEGUM_PROGRAM_ID,
+          collectionMint: collectionMint,
+          collectionMetadata: collectionMetadata,
+          editionAccount: collectionMasterEditionAccount,
+
+          // other accounts
+          compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+          logWrapper: SPL_NOOP_PROGRAM_ID,
+          bubblegumSigner: bubblegumSigner,
+          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        },
+        {
+          metadataArgs
+        },
+      ),
     );
 
-    console.log("\nSuccessfully minted the compressed NFT!");
-    console.log(explorerURL({ txSignature }));
+    logger.info("METADATA DONE");
 
-    return txSignature;
-  } catch (err) {
-    console.error("\nFailed to mint compressed NFT:", err);
 
-    // log a block explorer link for the failed transaction
-    await extractSignatureFromFailedTransaction(connection, err);
+    try {
+      // construct the transaction with our instructions, making the `payer` the `feePayer`
+      const tx = new Transaction().add(...mintIxs);
+      tx.feePayer = payer.publicKey;
 
-    throw err;
+      logger.info("TX CREATED");
+
+      // send the transaction to the cluster
+      const txSignature = await sendAndConfirmTransaction(
+        connection,
+        tx,
+        [payer],
+        {
+          commitment: "confirmed",
+          skipPreflight: true,
+        },
+      );
+
+      logger.info("TX SENT");
+
+      console.log("\nSuccessfully minted the compressed NFT!");
+      console.log(explorerURL({ txSignature }));
+
+      // return txSignature;
+      transactionSignatures.push(txSignature);
+    } catch (err) {
+      console.error("\nFailed to mint compressed NFT:", err);
+
+      // log a block explorer link for the failed transaction
+      await extractSignatureFromFailedTransaction(connection, err);
+
+      throw err;
+    }
   }
+  return transactionSignatures;
 }

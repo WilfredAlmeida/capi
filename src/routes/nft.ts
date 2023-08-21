@@ -32,7 +32,7 @@ import {
 import { WrapperConnection } from "../ReadApi/WrapperConnection";
 
 import dotenv from "dotenv";
-import { PublicKey } from "@metaplex-foundation/js";
+import { PublicKey, keypairIdentity } from "@metaplex-foundation/js";
 import { body } from "express-validator";
 import { handleInvalidInput } from "../middleware/invalidInputHandler";
 import { HttpResponseCode } from "../utils/constants";
@@ -42,6 +42,7 @@ import {
   uploadJsonMetadataToSupabase,
 } from "../utils/fileUpload";
 import { RequestBody } from "../interfaces/request";
+import supabase from "../db/supabase";
 dotenv.config();
 
 const router = Router();
@@ -76,6 +77,11 @@ router.post(
       .notEmpty()
       .isString()
       .withMessage("Invalid collectionSymbol"),
+    body("collection.collectionImage")
+      .trim()
+      .notEmpty()
+      .isString()
+      .withMessage("Invalid collectionImage"),
     body("nft.*.name")
       .trim()
       .escape()
@@ -111,9 +117,7 @@ router.post(
   async (req: Request, res: Response) => {
     const { collection, nft } = req.body as RequestBody;
 
-    // const { nftCount, mintTo, collectionName, collectionSymbol, images } = req.body;
-
-    const metadataUrls = [];
+    const nftMetadataUrls = [];
 
     for (let i = 0; i < nft.length; i++) {
       const imageUrl = await uploadImagesToSupabase(nft[i].image);
@@ -129,12 +133,21 @@ router.post(
       const metadataUrl = await uploadJsonMetadataToSupabase(
         JSON.stringify(jsonMetaData),
       );
-      metadataUrls.push(metadataUrl);
+      nftMetadataUrls.push(metadataUrl);
     }
 
-    // uploadImagesToSupabase();
+    let collectionImageUrl = null
+    if(collection.collectionImage){
+        collectionImageUrl = await uploadImagesToSupabase(collection.collectionImage)
+    }
 
-    // const collectionImageUrl = uploadImagesToSupabase()
+    const collectionMetadata = {
+        name: collection.collectionName,
+        symbol: collection.collectionSymbol,
+        image: collectionImageUrl,
+    }
+
+    const collectionMetadataUrl = await uploadJsonMetadataToSupabase(JSON.stringify(collectionMetadata))
 
     const neededMaxDepth = calculateMaxDepth(collection.nftCount);
 
@@ -153,16 +166,6 @@ router.post(
     }
     logger.info(neededMaxDepth as 5);
 
-    let mintToPublicKey;
-    try {
-      mintToPublicKey = new PublicKey(collection.mintAllTo!);
-    } catch (err) {
-      logger.error(err);
-      return res.status(HttpResponseCode.BAD_REQUEST).json({
-        data: null,
-        error: [{ message: "Invalid mintTo public key" }],
-      });
-    }
 
     // generate a new keypair for use in this demo (or load it locally from the filesystem when available)
     const payer = process.env?.LOCAL_PAYER_JSON_ABSPATH
@@ -171,7 +174,7 @@ router.post(
 
     console.log("Payer address:", payer.publicKey.toBase58());
     // console.log("Test wallet address:", testWallet.publicKey.toBase58());
-    console.log("Mint to address:", mintToPublicKey);
+    // console.log("Mint to address:", mintToPublicKey);
 
     // load the env variables and store the cluster RPC url
     const CLUSTER_URL = process.env.RPC_URL ?? clusterApiUrl("devnet");
@@ -254,11 +257,11 @@ router.post(
         name: collection.collectionName,
         symbol: collection.collectionSymbol,
         // specific json metadata for the collection
-        uri: "https://supersweetcollection.notarealurl/collection.json",
+        uri: collectionMetadataUrl,
         sellerFeeBasisPoints: 100,
         creators: [
           {
-            address: mintToPublicKey,
+            address: payer.publicKey,
             verified: false,
             share: 100,
           },
@@ -277,46 +280,94 @@ router.post(
       collectionMetadataV3,
     );
 
-    const compressedNFTMetadata: MetadataArgs = {
-      name: "CNFT Name",
-      symbol: collectionMetadataV3.data.symbol,
-      // specific json metadata for each NFT
-      uri: "https://supersweetcollection.notarealurl/token.json",
-      creators: [
-        {
-          address: mintToPublicKey,
-          //   address: testWallet.publicKey,
-          verified: false,
-          share: 100,
-        },
-      ], // or set to null
-      editionNonce: 0,
-      uses: null,
-      nftCollection: null,
-      primarySaleHappened: false,
-      sellerFeeBasisPoints: 0,
-      isMutable: true,
-      // these values are taken from the Bubblegum package
-      tokenProgramVersion: TokenProgramVersion.Original,
-      tokenStandard: TokenStandard.NonFungible,
-    };
 
-    await mintCompressedNFT(
+    const compressedNFTMetadataList = []
+    const mintToPublicKeys: PublicKey[] = []
+
+    for(let i=0;i<nft.length;i++){
+
+        compressedNFTMetadataList.push({
+            name: nft[i].name,
+            symbol: collectionMetadataV3.data.symbol,
+            // specific json metadata for each NFT
+            uri: nftMetadataUrls[i],
+            creators: [
+              {
+                address: payer.publicKey,
+                //   address: testWallet.publicKey,
+                verified: false,
+                share: 100,
+              },
+            ], // or set to null
+            editionNonce: 0,
+            uses: null,
+            nftCollection: null,
+            primarySaleHappened: false,
+            sellerFeeBasisPoints: 0,
+            isMutable: true,
+            // these values are taken from the Bubblegum package
+            tokenProgramVersion: TokenProgramVersion.Original,
+            tokenStandard: TokenStandard.NonFungible,
+            // collection: null
+        })
+
+        let mintToPublicKey;
+        try {
+          mintToPublicKey = nft[i].receiver? new PublicKey(nft[i].receiver!):new PublicKey(collection.mintAllTo!);
+        } catch (err) {
+          logger.error(err);
+          return res.status(HttpResponseCode.BAD_REQUEST).json({
+            data: null,
+            error: [{ message: "Invalid mintTo public key" }],
+          });
+        }
+
+        mintToPublicKeys.push(mintToPublicKey)
+
+    }
+
+    // const compressedNFTMetadata: MetadataArgs = {
+    //   name: "CNFT Name",
+    //   symbol: collectionMetadataV3.data.symbol,
+    //   // specific json metadata for each NFT
+    //   uri: "https://supersweetcollection.notarealurl/token.json",
+    //   creators: [
+    //     {
+    //       address: mintToPublicKey,
+    //       //   address: testWallet.publicKey,
+    //       verified: false,
+    //       share: 100,
+    //     },
+    //   ], // or set to null
+    //   editionNonce: 0,
+    //   uses: null,
+    //   nftCollection: null,
+    //   primarySaleHappened: false,
+    //   sellerFeeBasisPoints: 0,
+    //   isMutable: true,
+    //   // these values are taken from the Bubblegum package
+    //   tokenProgramVersion: TokenProgramVersion.Original,
+    //   tokenStandard: TokenStandard.NonFungible,
+    // };
+
+    const txSignatures = await mintCompressedNFT(
       connection,
       payer,
       treeKeypair.publicKey,
       nftCollection.mint,
       nftCollection.metadataAccount,
       nftCollection.masterEditionAccount,
-      compressedNFTMetadata,
+      compressedNFTMetadataList,
       // mint to this specific wallet (in this case, the tree owner aka `payer`)
-      mintToPublicKey,
+      mintToPublicKeys,
     );
 
     // fully mint a single compressed NFT to the payer
     console.log(
       `Minting a single compressed NFT to ${payer.publicKey.toBase58()}...`,
     );
+
+    
 
     // (async () => {
     //     //////////////////////////////////////////////////////////////////////////////

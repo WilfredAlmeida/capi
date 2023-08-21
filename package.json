@@ -43,6 +43,7 @@
     "@solana/spl-token": "^0.3.7",
     "@solana/web3.js": "^1.78.0",
     "@supabase/supabase-js": "^2.26.0",
+    "@unkey/api": "^0.6.11",
     "axios": "^1.4.0",
     "bip39": "^3.1.0",
     "cors": "^2.8.5",

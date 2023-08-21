@@ -32,7 +32,7 @@ import {
 import { WrapperConnection } from "../ReadApi/WrapperConnection";
 
 import dotenv from "dotenv";
-import { PublicKey, keypairIdentity } from "@metaplex-foundation/js";
+import { PublicKey } from "@metaplex-foundation/js";
 import { body } from "express-validator";
 import { handleInvalidInput } from "../middleware/invalidInputHandler";
 import { HttpResponseCode } from "../utils/constants";
@@ -42,7 +42,6 @@ import {
   uploadJsonMetadataToSupabase,
 } from "../utils/fileUpload";
 import { RequestBody } from "../interfaces/request";
-import supabase from "../db/supabase";
 dotenv.config();
 
 const router = Router();
@@ -308,7 +307,7 @@ router.post(
             // these values are taken from the Bubblegum package
             tokenProgramVersion: TokenProgramVersion.Original,
             tokenStandard: TokenStandard.NonFungible,
-            // collection: null
+            collection: null
         })
 
         let mintToPublicKey;
@@ -366,8 +365,6 @@ router.post(
     console.log(
       `Minting a single compressed NFT to ${payer.publicKey.toBase58()}...`,
     );
-
-    
 
     // (async () => {
     //     //////////////////////////////////////////////////////////////////////////////

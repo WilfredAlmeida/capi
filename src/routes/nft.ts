@@ -1,4 +1,5 @@
-import express, { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
+import axios from "axios";
 
 import { Keypair, LAMPORTS_PER_SOL, clusterApiUrl } from "@solana/web3.js";
 import {
@@ -42,6 +43,7 @@ import {
   uploadJsonMetadataToSupabase,
 } from "../utils/fileUpload";
 import { RequestBody } from "../interfaces/request";
+import verifyApiKey from "../middleware/apiKeyVerification";
 dotenv.config();
 
 const router = Router();
@@ -51,6 +53,7 @@ let initBalance: number, balance: number;
 
 router.post(
   "/mint",
+  verifyApiKey,
   [
     body("collection.nftCount")
       .trim()
@@ -135,18 +138,22 @@ router.post(
       nftMetadataUrls.push(metadataUrl);
     }
 
-    let collectionImageUrl = null
-    if(collection.collectionImage){
-        collectionImageUrl = await uploadImagesToSupabase(collection.collectionImage)
+    let collectionImageUrl = null;
+    if (collection.collectionImage) {
+      collectionImageUrl = await uploadImagesToSupabase(
+        collection.collectionImage,
+      );
     }
 
     const collectionMetadata = {
-        name: collection.collectionName,
-        symbol: collection.collectionSymbol,
-        image: collectionImageUrl,
-    }
+      name: collection.collectionName,
+      symbol: collection.collectionSymbol,
+      image: collectionImageUrl,
+    };
 
-    const collectionMetadataUrl = await uploadJsonMetadataToSupabase(JSON.stringify(collectionMetadata))
+    const collectionMetadataUrl = await uploadJsonMetadataToSupabase(
+      JSON.stringify(collectionMetadata),
+    );
 
     const neededMaxDepth = calculateMaxDepth(collection.nftCount);
 
@@ -164,7 +171,6 @@ router.post(
       });
     }
     logger.info(neededMaxDepth as 5);
-
 
     // generate a new keypair for use in this demo (or load it locally from the filesystem when available)
     const payer = process.env?.LOCAL_PAYER_JSON_ABSPATH
@@ -225,17 +231,14 @@ router.post(
       console.error("Not enough SOL to allocate the merkle tree");
       printConsoleSeparator();
 
-      return res
-        .status(HttpResponseCode.INTERNAL_SERVER_ERROR)
-        .json({
-          data: null,
-          errors: [
-            {
-              message:
-                "Not enough SOL to allocate the merkle tree. Donate some.",
-            },
-          ],
-        });
+      return res.status(HttpResponseCode.INTERNAL_SERVER_ERROR).json({
+        data: null,
+        errors: [
+          {
+            message: "Not enough SOL to allocate the merkle tree. Donate some.",
+          },
+        ],
+      });
     }
 
     // define the address the tree will live at
@@ -279,50 +282,49 @@ router.post(
       collectionMetadataV3,
     );
 
+    const compressedNFTMetadataList = [];
+    const mintToPublicKeys: PublicKey[] = [];
 
-    const compressedNFTMetadataList = []
-    const mintToPublicKeys: PublicKey[] = []
+    for (let i = 0; i < nft.length; i++) {
+      compressedNFTMetadataList.push({
+        name: nft[i].name,
+        symbol: collectionMetadataV3.data.symbol,
+        // specific json metadata for each NFT
+        uri: nftMetadataUrls[i],
+        creators: [
+          {
+            address: payer.publicKey,
+            //   address: testWallet.publicKey,
+            verified: false,
+            share: 100,
+          },
+        ], // or set to null
+        editionNonce: 0,
+        uses: null,
+        nftCollection: null,
+        primarySaleHappened: false,
+        sellerFeeBasisPoints: 0,
+        isMutable: true,
+        // these values are taken from the Bubblegum package
+        tokenProgramVersion: TokenProgramVersion.Original,
+        tokenStandard: TokenStandard.NonFungible,
+        collection: null,
+      });
 
-    for(let i=0;i<nft.length;i++){
+      let mintToPublicKey;
+      try {
+        mintToPublicKey = nft[i].receiver
+          ? new PublicKey(nft[i].receiver!)
+          : new PublicKey(collection.mintAllTo!);
+      } catch (err) {
+        logger.error(err);
+        return res.status(HttpResponseCode.BAD_REQUEST).json({
+          data: null,
+          error: [{ message: "Invalid mintTo public key" }],
+        });
+      }
 
-        compressedNFTMetadataList.push({
-            name: nft[i].name,
-            symbol: collectionMetadataV3.data.symbol,
-            // specific json metadata for each NFT
-            uri: nftMetadataUrls[i],
-            creators: [
-              {
-                address: payer.publicKey,
-                //   address: testWallet.publicKey,
-                verified: false,
-                share: 100,
-              },
-            ], // or set to null
-            editionNonce: 0,
-            uses: null,
-            nftCollection: null,
-            primarySaleHappened: false,
-            sellerFeeBasisPoints: 0,
-            isMutable: true,
-            // these values are taken from the Bubblegum package
-            tokenProgramVersion: TokenProgramVersion.Original,
-            tokenStandard: TokenStandard.NonFungible,
-            collection: null
-        })
-
-        let mintToPublicKey;
-        try {
-          mintToPublicKey = nft[i].receiver? new PublicKey(nft[i].receiver!):new PublicKey(collection.mintAllTo!);
-        } catch (err) {
-          logger.error(err);
-          return res.status(HttpResponseCode.BAD_REQUEST).json({
-            data: null,
-            error: [{ message: "Invalid mintTo public key" }],
-          });
-        }
-
-        mintToPublicKeys.push(mintToPublicKey)
-
+      mintToPublicKeys.push(mintToPublicKey);
     }
 
     // const compressedNFTMetadata: MetadataArgs = {
@@ -635,6 +637,61 @@ router.post(
   handleInvalidInput,
   async (req: Request, res: Response) => {},
 );
+
+
+router.get("/list/:collectionId",verifyApiKey, async (req: Request, res: Response) => {
+
+  const { page = 1, pageSize = 10 } = req.query;
+
+  const collectionId = req.params.collectionId;
+  if(!collectionId) {
+    return res.status(HttpResponseCode.BAD_REQUEST).json({
+      data: null,
+      error: [{ message: "Invalid collectionId" }],
+    });
+  }
+
+
+  let data = JSON.stringify({
+    "jsonrpc": "2.0",
+    "id": "someId",
+    "method": "getAssetsByGroup",
+    "params": {
+      "groupKey": "collection",
+      "groupValue": `${collectionId}`,
+      "page": parseInt(`${page}`),
+      "limit": parseInt(`${pageSize}`)
+    }
+  });
+  
+  let config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'https://devnet.helius-rpc.com/?api-key=458c90c5-1fd4-41a3-9502-251a0c93779d',
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    data : data
+  };
+  
+  const result = await axios.request(config)
+  const resultJson = result.data
+
+  logger.info(JSON.stringify(resultJson))
+
+  if(!resultJson){
+    return res.status(HttpResponseCode.BAD_REQUEST).json({
+      data: null,
+      error: [{ message: "Invalid collectionId" }],
+    });
+  }
+
+  return res.status(HttpResponseCode.SUCCESS).json({items: resultJson.result.items});
+
+
+})
+
+
 const allowedValues = [3, 5, 14, 15, 16, 17, 18, 19, 20, 24, 26, 30];
 const calculateMaxDepth = (items: number) => {
   const powerOfTwo = Math.ceil(Math.log2(items));

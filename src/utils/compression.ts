@@ -333,7 +333,6 @@ export async function mintCompressedNFT(
     */
 
   for (let i = 0; i < compressedNFTMetadata.length; i++) {
-
     mintIxs = [];
     logger.info(`minting compressed nft ${i}`);
 
@@ -377,13 +376,12 @@ export async function mintCompressedNFT(
           tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
         },
         {
-          metadataArgs
+          metadataArgs,
         },
       ),
     );
 
     logger.info("METADATA DONE");
-
 
     try {
       // construct the transaction with our instructions, making the `payer` the `feePayer`

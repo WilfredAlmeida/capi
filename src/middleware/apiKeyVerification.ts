@@ -19,7 +19,7 @@ const verifyApiKey = async (
     }
 
     /// TODO: Adjust this as per your authnentication logic
-    req.user = {email: "test@example.com", userId: "1"};
+    req.user = { email: "test@example.com", userId: "1" };
 
     next();
   } else {

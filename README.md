@@ -147,5 +147,11 @@ cAPI as a service takes care of the gas and other costs. This enables sponsored/
 Helius' DAS API is used to fetch cNFT information. The service is fast and efficient.
 
 ## Demo
+### Mint NFT Collection
 https://github.com/WilfredAlmeida/capi/assets/60785452/f781dc95-99c5-432a-82c6-696f7ccb9302
+
+### List Collection
+
+
+https://github.com/WilfredAlmeida/capi/assets/60785452/bc5bff36-cc2d-478b-9186-1e883c736114
 

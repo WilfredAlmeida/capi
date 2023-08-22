@@ -10,6 +10,18 @@ CAPI stores your images, creates metadata for collection and images, stores the 
 
 CAPI uses the Helius DAS API to provide you with fast access to your minted cNFTs. Additionally, CAPI stores data about your mints to provide you with tracking and other desired usability features.
 
+## Demo
+<details>
+  <summary>Mint Collection</summary>
+  <video src="https://github.com/WilfredAlmeida/capi/assets/60785452/f781dc95-99c5-432a-82c6-696f7ccb9302"/>
+</details>
+
+
+<details>
+  <summary>List Collection Items</summary>
+  <video src="https://github.com/WilfredAlmeida/capi/assets/60785452/bc5bff36-cc2d-478b-9186-1e883c736114" />
+</details>
+
 ## Api Reference
 
 1.  `/user/create`: Creates a new CAPI user in DB. Call this after authentication
@@ -145,13 +157,4 @@ cAPI as a service takes care of the gas and other costs. This enables sponsored/
 
 6. What is the use of Helius?  
 Helius' DAS API is used to fetch cNFT information. The service is fast and efficient.
-
-## Demo
-### Mint NFT Collection
-https://github.com/WilfredAlmeida/capi/assets/60785452/f781dc95-99c5-432a-82c6-696f7ccb9302
-
-### List Collection
-
-
-https://github.com/WilfredAlmeida/capi/assets/60785452/bc5bff36-cc2d-478b-9186-1e883c736114
 

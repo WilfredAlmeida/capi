@@ -21,9 +21,13 @@ router.post(
   handleInvalidInput,
   async (req: Request, res: Response) => {
     const { email } = req.body;
-    const id = ulid();
 
-    await supabase.from("users").insert({ user_id: id, email: email });
+    const dbRes = await supabase.from("users").insert({ email: email }).select("user_id");
+
+    return res.status(200).json({ 
+      userId: dbRes.data![0].user_id,
+    });
+
   },
 );
 

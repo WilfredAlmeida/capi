@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import dotenv from "dotenv";
 import unkey from "../unkey/unkey";
 import { logger } from "../logger";
+import supabase from "../db/supabase";
 dotenv.config();
 
 const router = Router();
@@ -24,6 +25,10 @@ router.post("/key/new", async (req: Request, res: Response) => {
     });
 
     if (created) {
+
+      /// TODO: Adjust this as per your authnentication logic
+      await supabase.from("users").update({"key_id":created.keyId}).eq("email","test@example.com")
+
       return res.status(200).json({ key: created.key });
     }
 

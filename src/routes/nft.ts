@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import axios from "axios";
+import axios, { HttpStatusCode } from "axios";
 
 import { Keypair, LAMPORTS_PER_SOL, clusterApiUrl } from "@solana/web3.js";
 import {
@@ -44,6 +44,8 @@ import {
 } from "../utils/fileUpload";
 import { RequestBody } from "../interfaces/request";
 import verifyApiKey from "../middleware/apiKeyVerification";
+import supabase from "../db/supabase";
+import { json } from "stream/consumers";
 dotenv.config();
 
 const router = Router();
@@ -201,7 +203,7 @@ router.post(
       maxBufferSize: 8,
     };
 
-    const canopyDepth = maxDepthSizePair.maxDepth - 5;
+    const canopyDepth = Math.abs(maxDepthSizePair.maxDepth - 5);
 
     // calculate the space available in the tree
     const requiredSpace = getConcurrentMerkleTreeAccountSize(
@@ -285,6 +287,16 @@ router.post(
     const compressedNFTMetadataList = [];
     const mintToPublicKeys: PublicKey[] = [];
 
+    /// TODO: Adjust this as per your business logic
+    const collectionCreators = [
+      {
+        address: payer.publicKey,
+        //   address: testWallet.publicKey,
+        verified: false,
+        share: 100,
+      },
+    ];
+
     for (let i = 0; i < nft.length; i++) {
       compressedNFTMetadataList.push({
         name: nft[i].name,
@@ -351,6 +363,54 @@ router.post(
     //   tokenStandard: TokenStandard.NonFungible,
     // };
 
+
+    let collectionId;
+    try{
+
+      const dbRes1 = await supabase.from("collection").insert({
+        user_id: req.user?.userId,
+        name: collection.collectionName,
+        symbol: collection.collectionSymbol,
+        image_url: collectionMetadata.image,
+        uri_url: collectionMetadataUrl,
+        mint: nftCollection.mint,
+        token_account: nftCollection.tokenAccount,
+        metadata_account: nftCollection.metadataAccount,
+        master_edition_account: nftCollection.masterEditionAccount,
+        seller_fee_basis_points: 100,
+        creators: collectionCreators,
+        uses: null,
+        mutable: null,
+        collection_details: null
+      }).select("collection_id")
+
+
+      collectionId = dbRes1.data?.[0]?.['collection_id'];
+
+      const dbRes2 = await supabase.from("keypair").insert({
+        public_key: treeKeypair.publicKey,
+        secret_key: treeKeypair.secretKey
+      }).select("keypair_id")
+
+
+      const keypairId = dbRes2.data?.[0]?.['keypair_id'];
+
+      await supabase.from("tree").insert({
+        collection_id: collectionId,
+        max_depth: maxDepthSizePair.maxDepth,
+        canopy_depth: canopyDepth,
+        payer: payer.publicKey,
+        storage_cost: storageCost,
+        keypair: keypairId
+      })
+
+    }
+    catch(err){
+      logger.error(err)
+      return res.status(HttpStatusCode.InternalServerError).json({error: err});
+    }
+
+
     const txSignatures = await mintCompressedNFT(
       connection,
       payer,
@@ -363,10 +423,19 @@ router.post(
       mintToPublicKeys,
     );
 
+    const dbr = await supabase.from("mints").insert({
+      user_id: req.user?.userId,
+      collection_id: collectionId,
+      transaction_signatures: txSignatures
+    })
+    logger.info(JSON.stringify(dbr))
+
     // fully mint a single compressed NFT to the payer
     console.log(
       `Minting a single compressed NFT to ${payer.publicKey.toBase58()}...`,
     );
+
+    return res.status(HttpResponseCode.SUCCESS).json({signatures: txSignatures})
 
     // (async () => {
     //     //////////////////////////////////////////////////////////////////////////////
@@ -622,20 +691,6 @@ router.post(
     //     );
     // })();
   },
-);
-
-router.post(
-  "/mint/initiate",
-  [
-    body("nftCount")
-      .trim()
-      .escape()
-      .notEmpty()
-      .isNumeric()
-      .withMessage("Invalid nftCount"),
-  ],
-  handleInvalidInput,
-  async (req: Request, res: Response) => {},
 );
 
 

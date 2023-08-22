@@ -18,6 +18,9 @@ const verifyApiKey = async (
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    /// TODO: Adjust this as per your authnentication logic
+    req.user = {email: "test@example.com", userId: "1"};
+
     next();
   } else {
     return res.status(401).json({ error: "Unauthorized" });

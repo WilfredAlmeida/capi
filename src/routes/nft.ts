@@ -413,7 +413,7 @@ router.post(
 
     return res
       .status(HttpResponseCode.SUCCESS)
-      .json({ signatures: txSignatures });
+      .json({ collectionMint: nftCollection.mint, signatures: txSignatures });
   },
 );
 

@@ -1,3 +1,5 @@
+![CAPI](https://github.com/WilfredAlmeida/capi/assets/60785452/4bcf7fac-04a0-4307-b6c0-ae79a7beaacf)
+
 # CAPI: cNFT API as a Service
 
 CAPI is a Compressed NFT (cNFT) API as a service that provides APIs to mint compressed NFTs (cNFT).
@@ -142,4 +144,8 @@ cNFTs are minted using the Bubblegum protocol by Metaplex Foundation.
 cAPI as a service takes care of the gas and other costs. This enables sponsored/funded minting of cNFTs.
 
 6. What is the use of Helius?  
-Helius' DAS API is used to fetch cNFT informtion. The service is fast and efficient.
+Helius' DAS API is used to fetch cNFT information. The service is fast and efficient.
+
+## Demo
+https://github.com/WilfredAlmeida/capi/assets/60785452/f781dc95-99c5-432a-82c6-696f7ccb9302
+

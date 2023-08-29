@@ -131,6 +131,10 @@ Params:
 - `UNKEY_KEY`: [Unkey](https://unkey.dev) admin key
 - `UNKEY_API_ID`: Unkey API id
 
+## Database Schema
+![dbDiagram](https://github.com/WilfredAlmeida/capi/assets/60785452/d756f03b-ed66-4585-b22a-b78c5a594faf)
+
+
 
 ## Tech Used
 - Express-TypeScript

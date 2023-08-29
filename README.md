@@ -6,7 +6,7 @@ CAPI is a Compressed NFT (cNFT) API as a service that provides APIs to mint comp
 
 CAPI takes in your collection details and NFT details and mints them to the provided addresses. You don't have to worry about the complexities of Merkle trees, Gas, or the chain in any sense. All you have to do is call the CAPI API.
 
-CAPI stores your images, creates metadata for collection and images, stores the metadata JSON files, creates merkle tree and collection and mints the cNFTs all under ~15secs for 1000 cNFT mints.
+CAPI stores your images, creates metadata for collection and images, stores the metadata JSON files, creates merkle tree and collection and mints the cNFTs.
 
 CAPI uses the Helius DAS API to provide you with fast access to your minted cNFTs. Additionally, CAPI stores data about your mints to provide you with tracking and other desired usability features.
 
